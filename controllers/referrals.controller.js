@@ -25,7 +25,7 @@ Controller.creditReferral = async (req, res) => {
   const saveCreditReferral = new ReferralCredits({
     email: referralUser.email,
     referralCode: req.body.referralCode,
-    amount: Number(req.body.amount)*plendifyRewardValue.currencyValue,
+    amount: Number(req.body.credits) * plendifyRewardValue.currencyValue,
     debitCredit: "CR",
     currency: req.body.currency || "GHS",
   });
@@ -35,26 +35,34 @@ Controller.creditReferral = async (req, res) => {
 
 Controller.buyWithPlendifyCredits = async (req,res)=>{
   const availableCreditValue = await getplendifyCreditvalue(req.body.referralCode, req.body.currency || 'GHS');
+  
   let paymentAmount = Number(req.body.purchaseAmount) -  availableCreditValue ;
   if(paymentAmount < 0){
     paymentAmount = 0;
   } 
+
   let usedPlendifyCredits = Number(req.body.purchaseAmount) - paymentAmount;
   debitCredit(usedPlendifyCredits,req.body);
-  const response ={
+
+  const response = {
     availableCredits : availableCreditValue,
     paymentAmount : paymentAmount,
     creditsUsed : usedPlendifyCredits,
-   }
-  res.json(response);
+  };
+
+  res.json({
+    status: "00",
+    message: "Payment with credit successful",
+    data: response  
+  });
 };
 
 /*
 Get total plendify credits amount in money value
 */
 async function getplendifyCreditvalue(referralCode, currency) {
-  const referralCredits = await ReferralCredits.find({referralCode:referralCode,currency:currency}).exec();
-  const amount = referralCredits.reduce((total,r)=> {return (total + ( r.amount)) },0);
+  const referralCredits = await ReferralCredits.find({referralCode: referralCode, currency: currency}).exec();
+  const amount = referralCredits.reduce((total, r) => (total + ( r.amount)), 0);
   return amount;
 };
 
@@ -69,8 +77,17 @@ async function getplendifyCreditvalue(referralCode, currency) {
     email: referralUser.email,
     referralCode: requestData.referralCode,
     amount: -1*(amount),
-    debitCredit: "DR",
+    debitCredit: "DB",
     currency: requestData.currency || "GHS",
   });
   debitedCredit.save();
-}
+
+  // const referralUser = await Referrals.updateOne(
+  //   { referralCode: requestData.referralCode }, 
+  //   { 
+  //     amount: -1*(amount),
+  //     debitCredit: "DR",
+  //     currency: requestData.currency || "GHS",
+  //   }
+  // );  
+};

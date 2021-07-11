@@ -9,19 +9,14 @@ var debug = require('debug')('myapp:server');
 var http = require('http');
 const glob = require('glob');
 
-
-
-console.log("Connecting ........................................................")
 mongoose.connect(config.db);
 const db = mongoose.connection;
 db.on('error', () => {
-    throw new Error('unable to connect to database at ' + config.db);
+    throw new Error('Unable to connect to database at ' + config.db);
 });
 
 const models = glob.sync(config.root + '/models/*.js');
-console.log("Requiring models>>>")
 models.forEach(function(model) {
-    console.log("Requiring model", model);
     require(model);
 });
 

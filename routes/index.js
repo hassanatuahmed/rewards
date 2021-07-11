@@ -8,6 +8,6 @@ const vouchersController = require('../controllers/vouchers.controller');
  router.post('/buyWithReferralCredits',referralsController.buyWithPlendifyCredits);
  
  router.post('/generate-voucher',vouchersController.newVoucher);
- router.post('/applyingvoucher',vouchersController.applyVoucher);
+ router.post('/apply-voucher',vouchersController.applyVoucher);
 
 module.exports = router;

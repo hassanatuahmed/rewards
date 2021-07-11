@@ -5,7 +5,7 @@ const ReferralCredits = new Schema({
   email: String,
 
   referralCode: String,
-  debitCredit: String, //DR ,CR
+  debitCredit: String, //DB ,CR
   amount: Number, //plendify rewards amount
   //currencyValue: Number, //equivalent amount in GHS
   currency: String, //GHS, USD
