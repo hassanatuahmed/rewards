@@ -8,6 +8,13 @@ const Vouchers = mongoose.model("Vouchers");
 
 const Controller = {};
 module.exports = Controller;
+const handleResponse = (status, message, body,res) => {
+    res.json({
+        status,
+        message,
+        data: body
+    })
+};
 
 
 Controller.newVoucher =(req,res)=>{
@@ -22,15 +29,21 @@ Controller.newVoucher =(req,res)=>{
         userTag:req.body.userTag || "" //type of users that can use this voucher leave empty for all types e.g. 
     });
     var str = req.body.voucherType.slice(0,2);
-    const voucher=  voucher_codes.generate({
+    const voucher =  voucher_codes.generate({
         // prefix: req.body.voucherType,
         prefix:str.toUpperCase(),
         length:3,
         charset: voucher_codes.charset("alphabetic")
     });
     saveVoucher.voucherCode  = voucher[0];
+    if (req.body.valueType === "percentage" || req.body.valueType === "fixed"){
+        console.log("all good");
+    }
+    else{
+        return handleResponse("01","wrong value type",{},res);
+    }
 
-    if (req.body.valueType === "percentage" && req.body.amount > 100) {
+    if (req.body.valueType === "percentage" && Number(req.body.amount) > 100) {
         return res.json({
             status: "01",
             message: "Please provide an appropriate percentage value",
@@ -50,63 +63,70 @@ Controller.newVoucher =(req,res)=>{
 
 
 Controller.applyVoucher = async (req, res) => {
-    const handleResponse = (status, message, body) => {
-        res.json({
-            status,
-            message,
-            data: body
-        })
-    };
+   
 
     const voucher = await Vouchers.findOne({ voucherCode: req.body.voucherCode }).exec();
 
     /**
      * Check if voucher exists
      */
-    if (!voucher) return handleResponse("01", "Sorry, Voucher does not exists", null);
+    if (!voucher) return handleResponse("01", "Sorry, Voucher does not exists", null,res);
 
     /**
      * Check if voucher hasn't been exhusted
      */
-    if (voucher.frequency <= 0) {
-        return handleResponse("01", "Sorry, Voucher has been exhusted", null);
+    if (voucher.frequency == 0) {
+        return handleResponse("01", "Sorry, Voucher has been exhusted", null,res);
     };
 
     /**
      * Check if voucher hasn't expired yet
      */
      if (Date.now() > new Date(voucher.expiryDate).getTime()) {
-        return handleResponse("01", "Sorry, Voucher has expired", null);
+        return handleResponse("01", "Sorry, Voucher has expired", null,res);
     };
 
     /**
      * Check if voucher is being applied to the correct entity
     */
-    if (voucher.voucherType !== req.body.voucherType) return handleResponse("01", "Sorry, Voucher is being applied to a wrong type", null);
-    if (voucher.category !== req.body.category) return handleResponse("01", "Sorry, Voucher is being applied to a wrong category", null);
-    if (voucher.appliesTo !== req.body.appliesTo) return handleResponse("01", "Sorry, Voucher is being applied to a wrong entity", null);
+    if (voucher.voucherType !== req.body.voucherType) 
+    return handleResponse("01", "Sorry, Voucher is being applied to a wrong type", null,res);
+
+    if (voucher.category !== req.body.category) 
+    return handleResponse("01", "Sorry, Voucher is being applied to a wrong category", null,res);
+
+    if (voucher.appliesTo !== req.body.appliesTo)
+     return handleResponse("01", "Sorry, Voucher is being applied to a wrong entity", null,res);
 
     let discountAmount, newAmount;
 
     if (voucher.valueType === "percentage") 
-        discountAmount = Number((voucher.amount/100) * 
-        
-        req.body.amount);
+        discountAmount = Number((voucher.amount/100) * req.body.amount);
+       
     else 
         discountAmount = voucher.amount
+
     newAmount = Number(req.body.amount - discountAmount);
 
-    Vouchers.updateOne({ voucherCode: req.body.voucherCode }, { frequency: voucher.frequency - 1 })
-    .then(() => {
+
+
+    try {
+        const updateResponse = await Vouchers.updateOne({ voucherCode: req.body.voucherCode }, { frequency: voucher.frequency - 1 })
+    if(updateResponse){
         const response = {
-            newAmount,
-            discountAmount,
-            voucher
-        };        
-        handleResponse("00", "Voucher applied successfully", response);
-    })
-    .catch((err) => {
-        handleResponse("02", "Server Error", null);
-        throw err;
-    });
+                    newAmount,
+                    discountAmount,
+                    voucher
+                };        
+                handleResponse("00", "Voucher applied successfully", response,res);
+       
+    }
+        
+    } catch (error) {
+        console.log(error);
+        handleResponse("01","an error occured",{},res);
+        
+    }
+    
+    
 }
