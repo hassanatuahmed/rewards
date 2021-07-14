@@ -7,7 +7,6 @@ const ReferralCredits = new Schema({
   referralCode: String,
   debitCredit: String, //DB ,CR
   amount: Number, //plendify rewards amount
-  //currencyValue: Number, //equivalent amount in GHS
   currency: String, //GHS, USD
   createdAt: { type: Date, default: Date.now },
 });

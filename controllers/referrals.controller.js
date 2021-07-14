@@ -22,6 +22,12 @@ Controller.newReferralCode = (req, res) => {
 Controller.creditReferral = async (req, res) => {
   const plendifyRewardValue = await PlendifyRewardMapping.findOne({currency: req.body.currency || 'GHS'}).exec();
   const referralUser = await Referrals.findOne({ referralCode: req.body.referralCode }).exec();
+
+  if(!referralUser)
+    return res.json({status:"01",message:"wrong referral code"});
+
+  
+ 
   const saveCreditReferral = new ReferralCredits({
     email: referralUser.email,
     referralCode: req.body.referralCode,
@@ -29,12 +35,17 @@ Controller.creditReferral = async (req, res) => {
     debitCredit: "CR",
     currency: req.body.currency || "GHS",
   });
+
+  
+
   saveCreditReferral.save();
+  
   res.json({ status: "00", message: "Plendify credits credited to " + referralUser.email });
 };
 
 Controller.buyWithPlendifyCredits = async (req,res)=>{
   const availableCreditValue = await getplendifyCreditvalue(req.body.referralCode, req.body.currency || 'GHS');
+  
   
   let paymentAmount = Number(req.body.purchaseAmount) -  availableCreditValue ;
   if(paymentAmount < 0){
@@ -43,6 +54,9 @@ Controller.buyWithPlendifyCredits = async (req,res)=>{
 
   let usedPlendifyCredits = Number(req.body.purchaseAmount) - paymentAmount;
   debitCredit(usedPlendifyCredits,req.body);
+  if (req.body.referralCode!== Referrals.referralCode)
+    return res.json({status:"01",message:"incorrect referralCode"+" payment Amount="+paymentAmount});
+
 
   const response = {
     availableCredits : availableCreditValue,
@@ -62,6 +76,7 @@ Get total plendify credits amount in money value
 */
 async function getplendifyCreditvalue(referralCode, currency) {
   const referralCredits = await ReferralCredits.find({referralCode: referralCode, currency: currency}).exec();
+
   const amount = referralCredits.reduce((total, r) => (total + ( r.amount)), 0);
   return amount;
 };
@@ -73,6 +88,9 @@ async function getplendifyCreditvalue(referralCode, currency) {
  */
  async function debitCredit(amount, requestData) {
   const referralUser = await Referrals.findOne({referralCode: requestData.referralCode});
+  
+ 
+
   const debitedCredit = new ReferralCredits({
     email: referralUser.email,
     referralCode: requestData.referralCode,
@@ -82,12 +100,5 @@ async function getplendifyCreditvalue(referralCode, currency) {
   });
   debitedCredit.save();
 
-  // const referralUser = await Referrals.updateOne(
-  //   { referralCode: requestData.referralCode }, 
-  //   { 
-  //     amount: -1*(amount),
-  //     debitCredit: "DR",
-  //     currency: requestData.currency || "GHS",
-  //   }
-  // );  
+   
 };

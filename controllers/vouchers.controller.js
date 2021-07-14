@@ -49,6 +49,16 @@ Controller.newVoucher =(req,res)=>{
             message: "Please provide an appropriate percentage value",
         })
     }
+    console.log("appliesTo>>>>>>",Boolean(Array.isArray(req.body.appliesTo)));
+    if (Boolean(Array.isArray(req.body.appliesTo))){
+       if(req.body.appliesTo.length < 1)
+       return handleResponse("01", "Sorry, appliesTo cannot  be empty", null,res);
+    }
+       
+    else{
+        return handleResponse("01", "Sorry, appliesTo can only be an array", null,res);
+    }
+    
 
     saveVoucher.save();
 
@@ -63,9 +73,7 @@ Controller.newVoucher =(req,res)=>{
 
 
 Controller.applyVoucher = async (req, res) => {
-   
-
-    const voucher = await Vouchers.findOne({ voucherCode: req.body.voucherCode }).exec();
+const voucher = await Vouchers.findOne({ voucherCode: req.body.voucherCode }).exec();
 
     /**
      * Check if voucher exists
@@ -89,34 +97,41 @@ Controller.applyVoucher = async (req, res) => {
     /**
      * Check if voucher is being applied to the correct entity
     */
-    if (voucher.voucherType !== req.body.voucherType) 
+    if (voucher.voucherType !== req.body.voucherType && req.body.voucherType !=="") 
     return handleResponse("01", "Sorry, Voucher is being applied to a wrong type", null,res);
 
     if (voucher.category !== req.body.category) 
     return handleResponse("01", "Sorry, Voucher is being applied to a wrong category", null,res);
 
-    if (voucher.appliesTo !== req.body.appliesTo)
-     return handleResponse("01", "Sorry, Voucher is being applied to a wrong entity", null,res);
-
+    // if (voucher.appliesTo !== req.body.appliesTo)
+    //  return handleResponse("01", "Sorry, Voucher is being applied to a wrong entity", null,res);
+   
     let discountAmount, newAmount;
 
-    if (voucher.valueType === "percentage") 
-        discountAmount = Number((voucher.amount/100) * req.body.amount);
-       
-    else 
-        discountAmount = voucher.amount
+    // if (voucher.valueType === "percentage") 
+    //     discountAmount = Number((voucher.amount/100) * req.body.amount);
 
-    newAmount = Number(req.body.amount - discountAmount);
+    if (voucher.appliesTo.includes("delivery")) {
+        const subTotal = Number(req.body.deliveryFee) + Number(req.body.amount);
 
+        discountAmount = voucher.valueType === "percentage" ? Number((voucher.amount/100) * subTotal) : voucher.amount
+        console.log("discount amount>>>>>>>>>>>>>>>",discountAmount)
+        newAmount = subTotal - discountAmount
+    }
 
+    else {
+        discountAmount = voucher.valueType === "percentage" ? Number((voucher.amount/100) * req.body.amount) : voucher.amount
+        newAmount = req.body.amount - discountAmount
+    }
+    
 
     try {
         const updateResponse = await Vouchers.updateOne({ voucherCode: req.body.voucherCode }, { frequency: voucher.frequency - 1 })
     if(updateResponse){
         const response = {
-                    newAmount,
-                    discountAmount,
-                    voucher
+                    newAmount:newAmount,
+                    discountAmount: discountAmount,
+                    
                 };        
                 handleResponse("00", "Voucher applied successfully", response,res);
        
@@ -124,7 +139,7 @@ Controller.applyVoucher = async (req, res) => {
         
     } catch (error) {
         console.log(error);
-        handleResponse("01","an error occured",{},res);
+        handleResponse("01","Applying voucher failed, kindly try again",{},res);
         
     }
     

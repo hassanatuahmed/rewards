@@ -5,11 +5,11 @@ const VoucherSchema= new Schema({
     amount:Number,
     valueType:String,
     voucherType:String,
-    category:String,
+    category:Number,
     voucherCode:String,
     frequency:Number,  //No of times voucher can be used
     expiryDate:Date,
-    appliesTo: String, //Voucher can apply to delivery and product
+    appliesTo: {type: Array,default:[]}, //Voucher can apply to delivery and product
     createdAt: { type: Date, default: Date.now } 
 });
 
