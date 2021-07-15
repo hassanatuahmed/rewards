@@ -9,12 +9,15 @@ const PlendifyRewardMapping = mongoose.model("RewardMapping");
 const Controller = {};
 module.exports = Controller;
 
-Controller.newReferralCode = (req, res) => {
+Controller.newReferralCode = async (req, res) => {
   const saveReferralCode = new Referrals({
     email: req.body.email,
     referralCode: req.body.referralCode,
     isReferralApplied: true
   });
+  const checkingReferral = await Referrals.findOne({email:req.body.email,referralCode:req.body.referralCode});
+  if(checkingReferral.email)
+    return res.json({status:"01",message:`you hvae already use this Code :${checkingReferral.referralCode}`});
   saveReferralCode.save();
   res.json({ status: "00", message: "Data successfully saved" });
 };

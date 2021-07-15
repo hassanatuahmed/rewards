@@ -49,7 +49,7 @@ Controller.newVoucher =(req,res)=>{
             message: "Please provide an appropriate percentage value",
         })
     }
-    console.log("appliesTo>>>>>>",Boolean(Array.isArray(req.body.appliesTo)));
+    
     if (Boolean(Array.isArray(req.body.appliesTo))){
        if(req.body.appliesTo.length < 1)
        return handleResponse("01", "Sorry, appliesTo cannot  be empty", null,res);
@@ -58,6 +58,16 @@ Controller.newVoucher =(req,res)=>{
     else{
         return handleResponse("01", "Sorry, appliesTo can only be an array", null,res);
     }
+    if(!req.body.voucherType)
+    return handleResponse("01", "Sorry, voucherType cannot  be empty", null,res);
+
+    if(!req.body.expiryDate)
+    return handleResponse("01", "Sorry, expiryDate cannot  be empty", null,res);
+
+    if(!req.body.frequency)
+    return handleResponse("01", "Sorry, frequency cannot  be empty", null,res);
+
+    
     
 
     saveVoucher.save();
