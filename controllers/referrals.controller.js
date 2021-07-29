@@ -2,6 +2,7 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const _ = require("lodash");
 const { pull } = require("lodash");
+const auth=require('../middleware/auth');
 
 const Referrals = mongoose.model("Referrals");
 const ReferralCredits = mongoose.model("ReferralCredits");
@@ -10,19 +11,32 @@ const Controller = {};
 module.exports = Controller;
 
 Controller.newReferralCode = async (req, res) => {
-  const saveReferralCode = new Referrals({
-    email: req.body.email,
-    referralCode: req.body.referralCode,
-    isReferralApplied: true
+  auth.verify(req,res,()=>{
+    const saveReferralCode = new Referrals({
+      email: req.body.email,
+      referralCode: req.body.referralCode,
+      isReferralApplied: true
+    });
+    // const checkingReferral = await Referrals.findOne({email:req.body.email,referralCode:req.body.referralCode});
+    //  try{
+    //   if(checkingReferral.referralCode && checkingReferral.email)
+    //   return res.json({status:"01",message:`you hvae already use this Code :${checkingReferral.referralCode}`});
+    //  }
+    //  catch(err){
+    //    res.status(404).json({status:"01",message:`email or code not valid :${err}`});
+    //  }
+  
+  
+    saveReferralCode.save();
+    res.json({ status: "00", message: "Data successfully saved" });
+
   });
-  const checkingReferral = await Referrals.findOne({email:req.body.email,referralCode:req.body.referralCode});
-  if(checkingReferral.email)
-    return res.json({status:"01",message:`you hvae already use this Code :${checkingReferral.referralCode}`});
-  saveReferralCode.save();
-  res.json({ status: "00", message: "Data successfully saved" });
+
+  
 };
 
 Controller.creditReferral = async (req, res) => {
+ auth.verify (req,res,async()=>{
   const plendifyRewardValue = await PlendifyRewardMapping.findOne({currency: req.body.currency || 'GHS'}).exec();
   const referralUser = await Referrals.findOne({ referralCode: req.body.referralCode }).exec();
 
@@ -44,12 +58,13 @@ Controller.creditReferral = async (req, res) => {
   saveCreditReferral.save();
   
   res.json({ status: "00", message: "Plendify credits credited to " + referralUser.email });
+  });
 };
 
 Controller.buyWithPlendifyCredits = async (req,res)=>{
+ auth.verify(req,res,async()=>{
   const availableCreditValue = await getplendifyCreditvalue(req.body.referralCode, req.body.currency || 'GHS');
-  
-  
+ 
   let paymentAmount = Number(req.body.purchaseAmount) -  availableCreditValue ;
   if(paymentAmount < 0){
     paymentAmount = 0;
@@ -72,6 +87,7 @@ Controller.buyWithPlendifyCredits = async (req,res)=>{
     message: "Payment with credit successful",
     data: response  
   });
+ });
 };
 
 /*

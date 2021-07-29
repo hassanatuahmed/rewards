@@ -5,6 +5,7 @@ const _ = require("lodash");
 const { pull, orderBy } = require("lodash");
 
 const Vouchers = mongoose.model("Vouchers");
+const auth = require('../middleware/auth');
 
 const Controller = {};
 module.exports = Controller;
@@ -18,6 +19,7 @@ const handleResponse = (status, message, body,res) => {
 
 
 Controller.newVoucher =(req,res)=>{
+   auth.verify(req,res,()=>{
     const saveVoucher = new Vouchers({
         amount:req.body.amount, //if percentage, field will contain percent value
         valueType:req.body.valueType,  //fixed, percentage
@@ -67,9 +69,6 @@ Controller.newVoucher =(req,res)=>{
     if(!req.body.frequency)
     return handleResponse("01", "Sorry, frequency cannot  be empty", null,res);
 
-    
-    
-
     saveVoucher.save();
 
     res.json({
@@ -79,11 +78,13 @@ Controller.newVoucher =(req,res)=>{
             voucher: voucher[0]
         }
     });
+   });
 }
 
 
 Controller.applyVoucher = async (req, res) => {
-const voucher = await Vouchers.findOne({ voucherCode: req.body.voucherCode }).exec();
+auth.verify(req,res,async()=>{
+    const voucher = await Vouchers.findOne({ voucherCode: req.body.voucherCode }).exec();
 
     /**
      * Check if voucher exists
@@ -152,6 +153,7 @@ const voucher = await Vouchers.findOne({ voucherCode: req.body.voucherCode }).ex
         handleResponse("01","Applying voucher failed, kindly try again",{},res);
         
     }
+});
     
     
 }
