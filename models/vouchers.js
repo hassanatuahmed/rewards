@@ -7,6 +7,7 @@ const VoucherSchema= new Schema({
     voucherType:String,
     category:Number,
     voucherCode:String,
+    //customizeVoucher:String,
     frequency:Number,  //No of times voucher can be used
     expiryDate:Date,
     appliesTo: {type: Array,default:[]}, //Voucher can apply to delivery and product
@@ -17,6 +18,7 @@ VoucherSchema.virtual('date')
 .get(() => this._id.getTimestamp());
 
 mongoose.model('Vouchers',VoucherSchema);
+
 
 
 

@@ -27,19 +27,32 @@ Controller.newVoucher =(req,res)=>{
         voucherType:req.body.voucherType, //orders, plans or promotions
         frequency:req.body.frequency, //No. of times voucher can be used
         expiryDate:req.body.expiryDate, //voucher expiry date
-        appliesTo: req.body.appliesTo, //Voucher can apply to delivery and product
+        appliesTo: req.body.appliesTo,
+        customizeVoucher:req.body.customizeVoucher, //Voucher can apply to delivery and product
         userTag:req.body.userTag || "" //type of users that can use this voucher leave empty for all types e.g. 
     });
+
+    
+
     var str = req.body.voucherType.slice(0,2);
     const voucher =  voucher_codes.generate({
-        // prefix: req.body.voucherType,
+        
         prefix:str.toUpperCase(),
         length:3,
         charset: voucher_codes.charset("alphabetic")
     });
-    saveVoucher.voucherCode  = voucher[0];
+
+    if(req.body.customizeVoucher){
+        saveVoucher.voucherCode = req.body.customizeVoucher;
+        
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>",saveVoucher.customizeVoucher);
+
+    }
+    else{
+        saveVoucher.voucherCode  = voucher[0];
+    }
     if (req.body.valueType === "percentage" || req.body.valueType === "fixed"){
-        console.log("all good");
+        // console.log("all good");
     }
     else{
         return handleResponse("01","wrong value type",{},res);
@@ -69,13 +82,15 @@ Controller.newVoucher =(req,res)=>{
     if(!req.body.frequency)
     return handleResponse("01", "Sorry, frequency cannot  be empty", null,res);
 
+   
+
     saveVoucher.save();
 
     res.json({
         status:"00",
-        message:`Voucher created successfully. Code :${voucher[0]}`,
+        message:`Voucher created successfully. Code `,
         data: {
-            voucher: voucher[0]
+            voucher: saveVoucher.voucherCode
         }
     });
    });
